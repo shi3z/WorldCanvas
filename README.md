@@ -127,8 +127,60 @@ checkpoints/
 ```
 
 
-# Inference without reference image
-If you don't have a reference image, you can proceed with inference as follows:
+# Integrated WebUI (Recommended)
+
+We provide an all-in-one Gradio WebUI that combines trajectory annotation and video generation in a single interface. No need to manually edit Python files or run separate scripts.
+
+### Quick Start
+
+```bash
+# Using uv (recommended)
+uv run python gradio/draw_traj_with_gen.py
+
+# Or using standard Python
+python gradio/draw_traj_with_gen.py
+```
+
+Then open http://localhost:8050 in your browser.
+
+### How to Use
+
+**Step 1: Upload Image**
+- Drag & drop an image or click to upload
+- Images are automatically resized to 832x480 (or 480x832 for portrait)
+
+**Step 2: Create Mask with SAM**
+- Click on the object you want to animate (green = positive point)
+- Use "Negative Point" to exclude areas
+- Click **Confirm Mask** when satisfied
+
+**Step 3: Draw Trajectory**
+- Click points on the canvas to draw the motion path
+- Set Start/End Frame (0-81) for timing control
+- Click **Build Trajectory** to generate the path
+- Use **Erase Mode** to mark invisible segments (for occlusion effects)
+
+**Step 4: Add Object**
+- Enter Object ID (e.g., 1, 2, 3...)
+- Enter Description (e.g., "a red car moving left")
+- Click **Add Object**
+- Repeat Steps 2-4 for multiple objects
+
+**Step 5: Generate Video**
+- Set random seed
+- Click **Generate Video**
+- Video will be saved to `outputs/video_seed{N}.mp4`
+
+### Tips
+- For static camera: select background objects, draw single-point trajectories, use "None" as description
+- For camera motion: draw trajectories for background objects
+- For appearing objects: set Start Frame > 0
+- For disappearing objects: set End Frame < 81
+
+---
+
+# Inference without reference image (CLI Method)
+If you prefer using the command line, you can proceed with inference as follows:
 
 ### 1. Generate your generation conditions with gradio
 
