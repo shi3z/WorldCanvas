@@ -615,7 +615,7 @@ def crop_and_resize(image, target_height, target_width):
     image = torchvision.transforms.functional.center_crop(image, (target_height, target_width))
     return image
 
-def generate_video(seed, state, progress=gr.Progress()):
+def generate_video(seed, num_steps, state, progress=gr.Progress()):
     """Generate video from current annotations"""
     from diffsynth import save_video
 
@@ -629,8 +629,11 @@ def generate_video(seed, state, progress=gr.Progress()):
 
     progress(0.1, desc="Preparing data...")
 
+    # Deep copy results to avoid modifying state
+    results_copy = copy.deepcopy(results)
+
     # Prepare JSON data
-    sample_json = prepare_json_data(results)
+    sample_json = prepare_json_data(results_copy)
     if sample_json is None:
         return None, "No valid captions found. Please add text descriptions."
 
@@ -650,7 +653,7 @@ def generate_video(seed, state, progress=gr.Progress()):
 
     current_prompt = sample_json['text_prompt']
 
-    progress(0.4, desc=f"Generating video with seed {seed}...")
+    progress(0.4, desc=f"Generating video with seed {seed}, {int(num_steps)} steps...")
 
     try:
         video = pipe(
@@ -664,7 +667,7 @@ def generate_video(seed, state, progress=gr.Progress()):
             num_frames=T,
             input_image=input_image,
             switch_DiT_boundary=0.9,
-            num_inference_steps=50,
+            num_inference_steps=int(num_steps),
             if_color=if_color,
             if_mask=if_mask,
             if_special_corr=if_special_corr,
@@ -673,6 +676,7 @@ def generate_video(seed, state, progress=gr.Progress()):
             vae_channel=vae_channel,
         )
     except Exception as e:
+        torch.cuda.empty_cache()
         return None, f"Video generation failed: {e}"
 
     progress(0.9, desc="Saving video...")
@@ -683,6 +687,11 @@ def generate_video(seed, state, progress=gr.Progress()):
 
     pil_frames = [Image.fromarray(frame) for frame in np.stack(video, axis=0)]
     save_video(pil_frames, output_path, fps=16, quality=5)
+
+    # Clean up GPU memory for next generation
+    del video
+    del pil_frames
+    torch.cuda.empty_cache()
 
     progress(1.0, desc="Done!")
 
@@ -756,7 +765,9 @@ with gr.Blocks(
 
             gr.Markdown("---")
             gr.Markdown("### Stage 4: Generate Video")
-            seed_input = gr.Number(label="Seed", value=0, precision=0)
+            with gr.Row():
+                seed_input = gr.Number(label="Seed", value=0, precision=0)
+                steps_slider = gr.Slider(label="Inference Steps", minimum=10, maximum=50, value=50, step=5)
             btn_generate = gr.Button("Generate Video", variant="primary", size="lg")
 
     with gr.Row():
@@ -780,7 +791,7 @@ with gr.Blocks(
 
     btn_confirm_object.click(confirm_current_object, inputs=[obj_id, obj_text, state], outputs=[canvas, status, state])
 
-    btn_generate.click(generate_video, inputs=[seed_input, state], outputs=[video_output, gen_status])
+    btn_generate.click(generate_video, inputs=[seed_input, steps_slider, state], outputs=[video_output, gen_status])
 
 if __name__ == "__main__":
     demo.queue().launch(
