@@ -1,0 +1,48 @@
+[project]
+name = "worldcanvas"
+version = "1.1.7"
+description = "WorldCanvas - Image-to-Video Framework with trajectory control"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision",
+    "cupy-cuda12x",
+    "transformers",
+    "controlnet-aux==0.0.7",
+    "imageio",
+    "imageio[ffmpeg]",
+    "safetensors",
+    "einops",
+    "sentencepiece",
+    "protobuf",
+    "modelscope",
+    "ftfy",
+    "pynvml",
+    "pandas",
+    "accelerate",
+    "pycocotools",
+    "gradio>=4.0.0",
+    "opencv-python",
+    "pillow",
+    "numpy",
+    "segment-anything @ git+https://github.com/facebookresearch/segment-anything.git",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["diffsynth"]
+
+[tool.hatch.build.targets.sdist]
+include = ["diffsynth"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+]
